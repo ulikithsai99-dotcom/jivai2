@@ -12,9 +12,9 @@ function calcEmergencyScore(
   confidence: string,
   ageGroup?: string
 ): number {
-  const base: Record<string, number> = { CRITICAL: 90, HIGH: 72, MEDIUM: 45, LOW: 20 };
-  const conf: Record<string, number> = { high: 5, medium: 0, low: -10 };
-  let score = (base[urgency] ?? 45) + (conf[confidence] ?? 0);
+  const base: Record<string, number> = { CRITICAL: 78, HIGH: 62, MEDIUM: 38, LOW: 15 };
+  const conf: Record<string, number> = { high: 12, medium: 0, low: -18 };
+  let score = (base[urgency] ?? 38) + (conf[confidence] ?? 0);
   if (ageGroup === "Senior Citizen" || ageGroup === "Infant") score += 5;
   return Math.min(100, Math.max(0, Math.round(score)));
 }

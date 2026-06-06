@@ -85,7 +85,7 @@ const URGENCY_CONFIG = {
   LOW:      { label: "LOW",      classes: "bg-green-500/20 text-green-400 border-green-500/40",  dot: "bg-green-500" },
 };
 
-const AUTO_CALL_THRESHOLD = 50;
+const AUTO_CALL_THRESHOLD = 85;
 const COUNTDOWN_SECONDS   = 5;
 
 function renderMarkdown(text: string) {
