@@ -74,6 +74,15 @@ type ClassificationResult = {
   immediateActions?: string[];
   emergencyScore?: number;
   primaryCallNumber?: string;
+  severity?: string;
+  recommended_action?: string;
+  patient?: {
+    age: number | null;
+    gender: string;
+    relation: string | null;
+    ageGroup: string;
+    ageInferred: boolean;
+  };
 };
 
 type Turn = { role: "user" | "assistant"; content: string };
@@ -146,13 +155,25 @@ export default function Response() {
   const fireBackendCall = useCallback(async (transcript: string, category: string) => {
     try {
       const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const cl = classification;
       await fetch(`${base}/api/emergency/call`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript, category, to: SECONDARY_CONTACT }),
+        body: JSON.stringify({
+          transcript,
+          category:          cl?.category        ?? category,
+          subcategory:       cl?.subcategory      ?? "",
+          severity:          cl?.severity         ?? "",
+          urgency:           cl?.urgency          ?? "",
+          patientAge:        cl?.patient?.age     ?? null,
+          patientGender:     cl?.patient?.gender  ?? "Unknown",
+          patientRelation:   cl?.patient?.relation ?? null,
+          recommendedAction: cl?.recommended_action ?? "",
+          to: SECONDARY_CONTACT,
+        }),
       });
     } catch { /* silent — Twilio call placed server-side */ }
-  }, []);
+  }, [classification]);
 
   const triggerSecondaryPrompt = useCallback((txScript: string, cat: string) => {
     if (secondaryDismissed) return;

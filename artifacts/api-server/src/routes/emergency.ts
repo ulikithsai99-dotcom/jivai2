@@ -300,43 +300,115 @@ router.post("/emergency/tts", async (req, res) => {
   res.json({ audio: "", format: "none", text });
 });
 
+function safe(text: string | undefined | null, maxLen = 200): string {
+  if (!text) return "";
+  return text.replace(/[<>&"']/g, " ").replace(/\s+/g, " ").trim().substring(0, maxLen);
+}
+
+function buildJivAIScript(params: {
+  transcript?: string;
+  category?: string;
+  subcategory?: string;
+  severity?: string;
+  urgency?: string;
+  patientAge?: string | number | null;
+  patientGender?: string;
+  patientRelation?: string | null;
+  recommendedAction?: string;
+}): string {
+  const {
+    transcript, category, subcategory, severity, urgency,
+    patientAge, patientGender, patientRelation, recommendedAction,
+  } = params;
+
+  const cat = safe(category || "Emergency");
+  const sub = safe(subcategory || "");
+  const sev = safe(severity || urgency || "High");
+  const tx  = safe(transcript, 160);
+
+  let patientDesc = "someone";
+  const parts: string[] = [];
+  if (patientRelation && patientRelation !== "null") parts.push(`their ${patientRelation}`);
+  else if (patientGender && patientGender !== "Unknown") parts.push(patientGender === "Male" ? "a male patient" : "a female patient");
+  if (patientAge) parts.push(`${patientAge} years old`);
+  if (parts.length) patientDesc = parts.join(", ");
+
+  const actionLines = recommendedAction
+    ? recommendedAction.split(".").map(s => s.trim()).filter(s => s.length > 5).slice(0, 3)
+    : [];
+
+  const lines: string[] = [];
+
+  lines.push(`Hello. This is JivAI, an AI emergency response system.`);
+  lines.push(`I am calling because an emergency has been detected and your number is listed as an emergency contact.`);
+  lines.push(`<break time="1s"/>`);
+
+  lines.push(`Emergency type: ${cat}${sub && sub !== cat ? `, specifically ${sub}` : ""}.`);
+  lines.push(`Severity level: ${sev}.`);
+  lines.push(`Patient: ${patientDesc}.`);
+
+  if (tx) {
+    lines.push(`<break time="0.5s"/>`);
+    lines.push(`Here is what was reported: ${tx}.`);
+  }
+
+  if (actionLines.length) {
+    lines.push(`<break time="0.5s"/>`);
+    lines.push(`Recommended immediate actions are: ${actionLines.join(". ")}.`);
+  }
+
+  lines.push(`<break time="1s"/>`);
+  lines.push(`Please respond to this emergency immediately. Call back or go to the person right away.`);
+  lines.push(`This message will now repeat.`);
+  lines.push(`<break time="2s"/>`);
+
+  const repeatLines = [
+    `Emergency type: ${cat}${sub && sub !== cat ? `, ${sub}` : ""}. Severity: ${sev}. Patient: ${patientDesc}.`,
+    tx ? `Reported: ${tx}.` : "",
+    `Please respond immediately. This was an automated alert from JivAI.`,
+  ].filter(Boolean);
+
+  lines.push(...repeatLines);
+
+  return `<Response><Say voice="alice" language="en-IN">${lines.join(" ")}</Say></Response>`;
+}
+
 router.post("/emergency/call", async (req, res) => {
-  const { transcript, category, to } = req.body as {
+  const {
+    transcript, category, subcategory, severity, urgency,
+    patientAge, patientGender, patientRelation, recommendedAction, to,
+  } = req.body as {
     transcript?: string;
     category?: string;
+    subcategory?: string;
+    severity?: string;
+    urgency?: string;
+    patientAge?: string | number | null;
+    patientGender?: string;
+    patientRelation?: string | null;
+    recommendedAction?: string;
     to?: string;
   };
 
-  const accountSid  = process.env.TWILIO_ACCOUNT_SID;
-  const authToken   = process.env.TWILIO_AUTH_TOKEN;
-  const fromNumber  = process.env.TWILIO_FROM_NUMBER;
-  const toNumber    = to || process.env.TWILIO_EMERGENCY_CONTACT;
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken  = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber = process.env.TWILIO_FROM_NUMBER;
+  const toNumber   = to || process.env.TWILIO_EMERGENCY_CONTACT;
 
   if (!accountSid || !authToken || !fromNumber || !toNumber) {
     res.status(503).json({ error: "Twilio not configured" });
     return;
   }
 
-  const safeTranscript = transcript
-    ? transcript.replace(/[<>&"]/g, " ").substring(0, 150)
-    : "";
-
-  const categoryLabel = category && category !== "Unknown" ? category : "an emergency";
-
-  const message = safeTranscript
-    ? `This is an automated emergency alert from JivAI. Someone reported ${categoryLabel}. They said: ${safeTranscript}. Please call them back immediately.`
-    : `This is an automated emergency alert from JivAI. Someone near you has reported ${categoryLabel}. Please call them back immediately.`;
-
-  const twiml = `<Response><Say voice="alice" language="en-IN">${message}</Say><Pause length="1"/><Say voice="alice" language="en-IN">This message will repeat once.</Say><Say voice="alice" language="en-IN">${message}</Say></Response>`;
+  const twiml = buildJivAIScript({
+    transcript, category, subcategory, severity, urgency,
+    patientAge, patientGender, patientRelation, recommendedAction,
+  });
 
   try {
     const twilio = await import("twilio");
     const client = twilio.default(accountSid, authToken);
-    const call = await client.calls.create({
-      twiml,
-      to: toNumber,
-      from: fromNumber,
-    });
+    const call = await client.calls.create({ twiml, to: toNumber, from: fromNumber });
     res.json({ success: true, callSid: call.sid, to: toNumber });
   } catch (err) {
     req.log.error({ err }, "Twilio call error");
