@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/jiv-ai/"
+title = "Jiv AI (Legacy)"
+version = "1.0.0"
+id = "artifacts/jiv-ai"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/jiv-ai/" ]
+localPort = 22602
+
+[services.development]
+run = "pnpm --filter @workspace/jiv-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/jiv-ai", "run", "build" ]
+publicDir = "artifacts/jiv-ai/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22602"
+BASE_PATH = "/jiv-ai/"

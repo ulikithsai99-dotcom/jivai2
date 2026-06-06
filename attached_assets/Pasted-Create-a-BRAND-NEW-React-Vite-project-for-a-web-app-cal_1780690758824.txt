@@ -1,0 +1,210 @@
+Create a BRAND NEW React + Vite project for a web app called "Jiv AI".
+
+This must be built FROM SCRATCH in a new folder.
+
+----------------------------------------
+
+🚨 PROJECT TYPE:
+
+Voice-first AI Emergency Assistant
+
+NOT a chatbot.
+NOT a dashboard.
+
+This is a real-time emergency guidance system.
+
+----------------------------------------
+
+🎯 MAIN GOAL:
+
+User speaks → AI understands → gives instant action guidance
+
+NO manual steps.
+NO clutter.
+NO confusion.
+
+----------------------------------------
+
+🧱 UI DESIGN (BUILD FROM SCRATCH)
+
+STRICT RULES:
+- Single screen ONLY
+- No sidebar
+- No multiple pages
+- No dashboard
+- No clutter
+
+----------------------------------------
+
+1. FULLSCREEN LAYOUT
+
+- Dark background (#0a0a0a)
+- Centered UI
+- Minimal elements
+
+----------------------------------------
+
+2. MAIN ELEMENT (CENTER)
+
+🎤 BIG MICROPHONE BUTTON
+
+- Large circular button
+- Cyan glow
+- Pulse animation when listening
+- Text:
+  "Tap and speak. I’m here to help."
+
+----------------------------------------
+
+3. LIVE TRANSCRIPT
+
+- Show speech text above mic
+- Large readable font
+- Updates in real time
+
+----------------------------------------
+
+4. AI RESPONSE PANEL
+
+- Show response above transcript
+- Calm, short messages
+- Add "Thinking..." before response
+
+----------------------------------------
+
+5. ACTION BUTTONS (CRITICAL)
+
+After response, show:
+
+- 🚨 Call Emergency (RED)
+- 📍 Nearby Help
+- 📋 Step Guide
+
+Big buttons, easy tap
+
+----------------------------------------
+
+6. CHECKLIST UI
+
+✔ Check breathing  
+✔ Call emergency  
+✔ Stay calm  
+
+----------------------------------------
+
+7. SAFE EXIT BUTTON
+
+- Small corner button
+- "Quick Exit"
+
+----------------------------------------
+
+🎨 DESIGN STYLE:
+
+- Dark minimal UI
+- Cyan + Red accents
+- High contrast
+- Large fonts
+- No clutter
+
+----------------------------------------
+
+⚙️ TECH STACK:
+
+- React + Vite
+- Tailwind CSS
+- Functional components
+
+----------------------------------------
+
+🧠 VOICE SYSTEM (MANDATORY)
+
+Use Web Speech API:
+
+- Click mic → start listening
+- Show live transcription
+- Detect silence (2–3 sec)
+- Auto stop
+
+----------------------------------------
+
+❗ IMPORTANT:
+
+- DO NOT require "Send" button
+- Speech should auto-trigger AI
+
+----------------------------------------
+
+🧠 AI INTEGRATION (LLM)
+
+Integrate with OpenAI or Gemini API.
+
+Flow:
+
+Speech → Text → Send to AI → Get response
+
+Use SYSTEM PROMPT:
+
+"You are a calm emergency assistant. 
+Give short, clear, step-by-step guidance. 
+Prioritize immediate safety actions."
+
+----------------------------------------
+
+⚡ RESPONSE FLOW:
+
+- After silence:
+  → Send text to AI automatically
+  → Show "Thinking..."
+  → Display response
+
+----------------------------------------
+
+🚫 FIX BUGS:
+
+- No repeated sending
+- One speech = one response
+- No duplicate messages
+
+----------------------------------------
+
+🔊 OPTIONAL (HIGH IMPACT):
+
+Add text-to-speech:
+
+- AI speaks response aloud
+
+----------------------------------------
+
+⚙️ ENGINEERING RULES:
+
+- Single speech recognition instance
+- Proper cleanup
+- No infinite loops
+- Clean state management
+
+----------------------------------------
+
+📁 STRUCTURE:
+
+- App.jsx
+- MicButton.jsx
+- Transcript.jsx
+- ResponsePanel.jsx
+- ActionButtons.jsx
+
+----------------------------------------
+
+🎯 FINAL RESULT:
+
+- Tap mic
+- Speak once
+- AI responds automatically
+- Show actions instantly
+- Clean, calm, fast UI
+
+----------------------------------------
+
+FOCUS:
+
+Clarity > Speed > Real-world usefulness > Impact

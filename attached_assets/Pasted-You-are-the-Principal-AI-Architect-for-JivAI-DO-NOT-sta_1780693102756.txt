@@ -1,0 +1,297 @@
+You are the Principal AI Architect for JivAI.
+
+DO NOT start coding immediately.
+
+FIRST perform a complete audit of the existing system and identify why it succeeds only on known test cases but struggles with unseen real-world scenarios.
+
+Generate:
+
+1. Current architecture analysis
+2. Emergency classification flow
+3. AI provider flow
+4. Retrieval flow
+5. Knowledge engine flow
+6. Failure points
+7. Scalability limitations
+8. Generalization limitations
+
+Only after the audit create an implementation plan.
+
+=================================================
+
+PROJECT GOAL
+
+JivAI is NOT a chatbot.
+
+JivAI is an Emergency Intelligence System.
+
+The system must handle emergency situations it has never explicitly seen before.
+
+It should reason about emergencies instead of matching exact examples.
+
+=================================================
+
+DO NOT MODIFY
+
+* UI
+* UX
+* Layout
+* Colors
+* Screens
+* Existing user flow
+
+Only improve intelligence, reasoning, classification, retrieval, robustness, and reliability.
+
+=================================================
+
+CORE PROBLEM
+
+Current behavior:
+
+Known examples work.
+
+Unknown wording fails.
+
+Example:
+
+"My father collapsed."
+
+Works.
+
+But:
+
+"My dad suddenly fell."
+
+"My father isn't waking up."
+
+"Papa gir gaye."
+
+"My father is unconscious."
+
+may fail or return incorrect guidance.
+
+This must be fixed.
+
+=================================================
+
+TARGET GOAL
+
+The system should understand intent, meaning, context and urgency.
+
+It must classify emergencies even when wording changes completely.
+
+=================================================
+
+IMPLEMENT SEMANTIC UNDERSTANDING
+
+Do NOT rely on:
+
+* exact keywords
+* hardcoded phrases
+* fixed test cases
+
+Implement:
+
+1. Embedding-based similarity
+2. Semantic search
+3. Intent clustering
+4. Context-aware classification
+5. Multi-stage reasoning
+
+The system should understand:
+
+"blood coming from leg"
+
+≈
+
+"severe cut"
+
+≈
+
+"deep wound"
+
+≈
+
+"leg injury bleeding heavily"
+
+All represent:
+
+Medical Emergency → Severe Bleeding
+
+=================================================
+
+MULTI-LAYER CLASSIFICATION
+
+Layer 1:
+Emergency vs Non-Emergency
+
+Layer 2:
+Category
+
+Layer 3:
+Subcategory
+
+Layer 4:
+Urgency
+
+Layer 5:
+Action Recommendation
+
+=================================================
+
+ROBUST INPUT HANDLING
+
+Handle:
+
+* spelling mistakes
+* panic typing
+* incomplete sentences
+* Hinglish
+* regional language input
+* speech-to-text errors
+* slang
+* elderly speech patterns
+
+Examples:
+
+"meri maa gir gayi"
+
+"phone hack ho gaya"
+
+"khoon nikal raha"
+
+"aadhaar kho gaya"
+
+"koi peecha kar raha hai"
+
+must all classify correctly.
+
+=================================================
+
+UNCERTAINTY HANDLING
+
+If confidence is low:
+
+Do NOT hallucinate.
+
+Instead:
+
+* ask one clarification question
+  OR
+* provide safest guidance path
+
+Example:
+
+Input:
+"He is not okay."
+
+Response:
+
+"Is the person conscious and breathing?"
+
+The system should intelligently recover from ambiguity.
+
+=================================================
+
+KNOWLEDGE ENGINE
+
+Convert emergency knowledge into structured retrieval.
+
+Use:
+
+* vector database
+* embeddings
+* semantic search
+* retrieval augmentation
+
+Do not depend entirely on LLM memory.
+
+Store:
+
+* emergency procedures
+* government helplines
+* escalation paths
+* first-aid instructions
+* cybercrime workflows
+* document recovery workflows
+
+=================================================
+
+AI MODEL STRATEGY
+
+Implement hybrid intelligence.
+
+Priority:
+
+1. Retrieval
+2. Classification
+3. LLM reasoning
+
+Never let raw LLM responses drive emergency actions.
+
+Use LLM only when retrieval confidence is low.
+
+=================================================
+
+SELF-EVALUATION
+
+Generate 500+ synthetic emergency scenarios.
+
+Include:
+
+Medical
+Cybercrime
+Women Safety
+Mental Health
+Lost Documents
+Public Safety
+Disaster
+
+Generate variations using:
+
+* different wording
+* different languages
+* slang
+* spelling errors
+* panic speech
+
+Measure:
+
+Category Accuracy
+Subcategory Accuracy
+Urgency Accuracy
+
+=================================================
+
+FAILSAFE REQUIREMENT
+
+If classification fails:
+
+Do NOT return generic responses.
+
+Instead:
+
+1. Identify possible categories
+2. Ask minimum clarification
+3. Continue safely
+
+=================================================
+
+SUCCESS CRITERIA
+
+The system should correctly classify emergencies it has never explicitly seen before.
+
+It should reason from meaning, not memorize phrases.
+
+The same emergency expressed in 100 different ways should map to the same category and guidance.
+
+The system should behave like an Emergency Intelligence Engine rather than a test-case-driven chatbot.
+
+After implementation provide:
+
+* architecture diagram
+* changed files
+* benchmark results
+* accuracy report
+* remaining weaknesses
+* next-stage improvements

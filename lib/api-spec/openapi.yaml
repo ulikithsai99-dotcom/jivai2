@@ -1,0 +1,180 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: JivAI Emergency Intelligence System API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: emergency
+    description: JivAI emergency intelligence operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /emergency/classify:
+    post:
+      operationId: classifyEmergency
+      tags: [emergency]
+      summary: Classify emergency input using knowledge engine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassifyInput"
+      responses:
+        "200":
+          description: Classification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassificationResult"
+  /emergency/guidance:
+    post:
+      operationId: getEmergencyGuidance
+      tags: [emergency]
+      summary: Stream AI emergency guidance (SSE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuidanceInput"
+      responses:
+        "200":
+          description: SSE stream of AI emergency guidance chunks
+          content:
+            text/event-stream: {}
+  /emergency/tts:
+    post:
+      operationId: textToSpeech
+      tags: [emergency]
+      summary: Convert text to speech audio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TtsInput"
+      responses:
+        "200":
+          description: Audio data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TtsOutput"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ClassifyInput:
+      type: object
+      properties:
+        transcript:
+          type: string
+          description: User emergency input text
+      required:
+        - transcript
+    ClassificationResult:
+      type: object
+      properties:
+        category:
+          type: string
+        subcategory:
+          type: string
+        urgency:
+          type: string
+          enum: [CRITICAL, HIGH, MEDIUM, LOW]
+        confidence:
+          type: string
+          enum: [high, medium, low]
+        clarificationNeeded:
+          type: boolean
+        question:
+          type: ["string", "null"]
+        helplines:
+          type: array
+          items:
+            $ref: "#/components/schemas/Helpline"
+        immediateActions:
+          type: array
+          items:
+            type: string
+      required:
+        - category
+        - subcategory
+        - urgency
+        - confidence
+        - clarificationNeeded
+    Helpline:
+      type: object
+      properties:
+        name:
+          type: string
+        number:
+          type: string
+        when:
+          type: string
+      required:
+        - name
+        - number
+        - when
+    GuidanceInput:
+      type: object
+      properties:
+        transcript:
+          type: string
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationTurn"
+      required:
+        - transcript
+    ConversationTurn:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+      required:
+        - role
+        - content
+    TtsInput:
+      type: object
+      properties:
+        text:
+          type: string
+      required:
+        - text
+    TtsOutput:
+      type: object
+      properties:
+        audio:
+          type: string
+        format:
+          type: string
+        text:
+          type: string
+      required:
+        - audio
+        - format

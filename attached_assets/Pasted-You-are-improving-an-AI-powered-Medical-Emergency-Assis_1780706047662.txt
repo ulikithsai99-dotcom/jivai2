@@ -1,0 +1,163 @@
+You are improving an AI-powered Medical Emergency Assistant.
+
+Current Problems:
+
+1. The system always returns "Call 112" for medical emergencies.
+2. The system does not infer age group or gender from family relationships.
+3. The system does not perform sufficient medical triage before giving recommendations.
+
+Required Improvements:
+
+### 1. Smart Medical Emergency Classification
+
+Before suggesting a helpline, classify the medical emergency into categories such as:
+
+* Cardiac (heart attack, chest pain, collapse)
+* Respiratory (breathing difficulty, choking)
+* Neurological (stroke, seizure, unconsciousness)
+* Trauma/Injury (accident, bleeding, fractures)
+* Poisoning/Overdose
+* Pediatric Emergency
+* Elderly Emergency
+* Pregnancy Emergency
+* General Medical Emergency
+
+Determine:
+
+* Emergency Category
+* Severity (Low, Moderate, High, Critical)
+* Recommended Immediate Action
+
+### 2. Intelligent Helpline Selection
+
+Do not always return 112.
+
+For medical emergencies:
+
+* Primary Ambulance Helpline: 108
+* Emergency Response Backup: 112
+
+Example:
+
+{
+"emergency_type": "Medical",
+"category": "Cardiac",
+"severity": "Critical",
+"primary_helpline": "108",
+"backup_helpline": "112",
+"recommended_action": "Call ambulance immediately and begin emergency first aid if trained."
+}
+
+### 3. Relationship-Based Demographic Inference
+
+Create a relationship inference engine.
+
+Examples:
+
+grandmother → Female, Senior Citizen (60+)
+grandfather → Male, Senior Citizen (60+)
+mother → Female, Adult
+father → Male, Adult
+wife → Female, Adult
+husband → Male, Adult
+daughter → Female, Child/Young Adult
+son → Male, Child/Young Adult
+sister → Female
+brother → Male
+
+When explicit age is not provided:
+
+* Estimate age group from relationship.
+* Mark estimate as inferred.
+
+Example:
+
+Input:
+"My grandmother suddenly collapsed."
+
+Output:
+
+{
+"relation": "grandmother",
+"gender": "Female",
+"age_group": "Senior Citizen",
+"age_inference": true
+}
+
+### 4. Prioritize Explicit Information
+
+If the user provides an actual age or gender, always use that information instead of relationship-based estimates.
+
+Example:
+
+"My grandmother aged 72 is unconscious."
+
+Output:
+
+{
+"gender": "Female",
+"age": 72,
+"age_group": "Senior Citizen"
+}
+
+### 5. Risk Adjustment Based on Age
+
+Increase severity score when:
+
+* Age > 60
+* Age < 5
+* Pregnancy indicators exist
+
+Example:
+Chest pain in a 25-year-old → High
+Chest pain in a 75-year-old → Critical
+
+### 6. Structured Response Format
+
+Return:
+
+{
+"detected_emergency": "",
+"category": "",
+"severity": "",
+"patient": {
+"relation": "",
+"gender": "",
+"age": null,
+"age_group": ""
+},
+"recommended_action": "",
+"primary_helpline": "",
+"backup_helpline": "",
+"reasoning": ""
+}
+
+### 7. Robust NLP Extraction
+
+Extract:
+
+* Relationship
+* Age
+* Gender
+* Symptoms
+* Duration
+* Consciousness state
+* Severity indicators
+
+Handle varied phrasing such as:
+
+* "My grandmother suddenly collapsed."
+* "Dad is having severe chest pain."
+* "My 72-year-old grandmother is unconscious."
+* "My little brother cannot breathe properly."
+* "My wife is bleeding heavily."
+
+### 8. Fail-Safe Logic
+
+If confidence is low:
+
+* Ask a clarifying question.
+* Do not guess serious medical conditions.
+* Still provide emergency contact recommendations if symptoms appear critical.
+
+Refactor the codebase to implement these features cleanly using modular functions, reusable mappings, confidence scoring, and comprehensive test cases.
