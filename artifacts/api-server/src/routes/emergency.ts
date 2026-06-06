@@ -248,7 +248,7 @@ router.post("/emergency/guidance", async (req, res) => {
     ];
 
     const stream = await ai.models.generateContentStream({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       contents,
       config: {
         systemInstruction: CLASSIFICATION_SYSTEM_PROMPT,
@@ -363,6 +363,50 @@ function buildFallbackScript(params: {
   return lines.filter(Boolean).join(" ");
 }
 
+function buildSmsAlert(params: {
+  transcript?: string;
+  category?: string;
+  subcategory?: string;
+  severity?: string;
+  urgency?: string;
+  patientAge?: string | number | null;
+  patientGender?: string;
+  patientRelation?: string | null;
+  recommendedAction?: string;
+}): string {
+  const { transcript, category, subcategory, severity, urgency, patientAge, patientGender, patientRelation, recommendedAction } = params;
+
+  const cat = safe(category || "Emergency");
+  const sub = safe(subcategory || "");
+  const sev = safe(severity || urgency || "High");
+  const tx  = safe(transcript, 180);
+
+  let patientDesc = "";
+  const parts: string[] = [];
+  if (patientRelation && patientRelation !== "null") parts.push(`their ${patientRelation}`);
+  else if (patientGender && patientGender !== "Unknown") parts.push(patientGender === "Male" ? "a male" : "a female");
+  if (patientAge) parts.push(`${patientAge}y`);
+  if (parts.length) patientDesc = ` — ${parts.join(", ")}`;
+
+  const action = recommendedAction
+    ? recommendedAction.split(".").map(s => s.trim()).filter(s => s.length > 5)[0] ?? ""
+    : "";
+
+  const lines = [
+    `🚨 JIVAI EMERGENCY ALERT`,
+    ``,
+    `Type: ${cat}${sub && sub !== cat ? ` (${sub})` : ""}`,
+    `Severity: ${sev}${patientDesc}`,
+    tx ? `Reported: "${tx}"` : null,
+    action ? `Action needed: ${action}` : null,
+    ``,
+    `A voice call with full details is also being placed to you.`,
+    `Reply STOP to opt out of future alerts.`,
+  ].filter((l): l is string => l !== null);
+
+  return lines.join("\n").trim();
+}
+
 async function buildJivAIScript(params: {
   transcript?: string;
   category?: string;
@@ -408,7 +452,7 @@ Your briefing must:
 Keep total length under 60 seconds when spoken aloud. Use simple, clear English. No special characters except commas and periods.`;
 
     const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: { maxOutputTokens: 400 },
     });
@@ -464,14 +508,31 @@ router.post("/emergency/call", async (req, res) => {
     patientAge, patientGender, patientRelation, recommendedAction,
   });
 
+  const smsBody = buildSmsAlert({
+    transcript, category, subcategory, severity, urgency,
+    patientAge, patientGender, patientRelation, recommendedAction,
+  });
+
   try {
     const twilio = await import("twilio");
     const client = twilio.default(accountSid, authToken);
-    const call = await client.calls.create({ twiml, to: toNumber, from: fromNumber });
-    res.json({ success: true, callSid: call.sid, to: toNumber });
+
+    const [call, sms] = await Promise.allSettled([
+      client.calls.create({ twiml, to: toNumber, from: fromNumber }),
+      client.messages.create({ body: smsBody, to: toNumber, from: fromNumber }),
+    ]);
+
+    const callSid = call.status === "fulfilled" ? call.value.sid : null;
+    const messageSid = sms.status === "fulfilled" ? sms.value.sid : null;
+
+    if (!callSid && !messageSid) {
+      throw new Error("Both call and SMS failed");
+    }
+
+    res.json({ success: true, callSid, messageSid, to: toNumber });
   } catch (err) {
-    req.log.error({ err }, "Twilio call error");
-    res.status(500).json({ error: "Failed to place call", detail: String(err) });
+    req.log.error({ err }, "Twilio error");
+    res.status(500).json({ error: "Failed to place call/SMS", detail: String(err) });
   }
 });
 

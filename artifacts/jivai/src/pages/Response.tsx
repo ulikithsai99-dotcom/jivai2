@@ -129,6 +129,7 @@ export default function Response() {
 
   const [secondaryCountdown, setSecondaryCountdown]   = useState<number | null>(null);
   const [secondaryDismissed, setSecondaryDismissed]   = useState(false);
+  const [alertSent, setAlertSent]                     = useState(false);
   const secondaryRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [gps, setGps]           = useState<GpsLocation | null>(null);
@@ -155,7 +156,7 @@ export default function Response() {
     try {
       const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
       const cl = classification;
-      await fetch(`${base}/api/emergency/call`, {
+      const res = await fetch(`${base}/api/emergency/call`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -171,7 +172,8 @@ export default function Response() {
           to: SECONDARY_CONTACT || undefined,
         }),
       });
-    } catch { /* silent — Twilio call placed server-side */ }
+      if (res.ok) setAlertSent(true);
+    } catch { /* silent — Twilio handles server-side */ }
   }, [classification]);
 
   const triggerSecondaryPrompt = useCallback((txScript: string, cat: string) => {
@@ -443,22 +445,25 @@ export default function Response() {
         </div>
       )}
 
-      {/* Secondary contact auto-call */}
+      {/* Secondary contact auto-call + SMS */}
       {secondaryCountdown !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="w-full max-w-sm mx-4 bg-card border-2 border-orange-500/60 rounded-2xl overflow-hidden shadow-2xl">
             <div className="bg-orange-500/10 px-5 py-4 border-b border-orange-500/30">
               <div className="flex items-center gap-2">
                 <Phone className="w-5 h-5 text-orange-400 animate-pulse" />
-                <span className="font-bold text-foreground">Calling Emergency Contact</span>
+                <span className="font-bold text-foreground">Alerting Emergency Contact</span>
               </div>
             </div>
             <div className="px-5 py-6 text-center">
-              <p className="text-muted-foreground text-sm mb-2">Dialing via network in</p>
+              <p className="text-muted-foreground text-sm mb-2">Sending voice call + SMS in</p>
               <p className="text-5xl font-black text-orange-400 mb-1">{secondaryCountdown}</p>
               <p className="text-muted-foreground text-xs mb-1">second{secondaryCountdown !== 1 ? "s" : ""}…</p>
               <p className="text-base font-bold text-foreground mb-1">{SECONDARY_CONTACT_DISPLAY}</p>
-              <p className="text-xs text-muted-foreground mb-6">They will receive a voice call with emergency details</p>
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <span className="text-xs bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-full px-2.5 py-1">📞 Voice call</span>
+                <span className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-full px-2.5 py-1">💬 SMS alert</span>
+              </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => {
@@ -470,7 +475,7 @@ export default function Response() {
                   className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-xl font-bold text-sm hover:opacity-90"
                 >
                   <Phone className="w-4 h-4" />
-                  Call Now
+                  Send Now
                 </button>
                 <button
                   onClick={dismissSecondary}
@@ -482,6 +487,14 @@ export default function Response() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Alert sent confirmation */}
+      {alertSent && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-green-900/90 border border-green-500/50 text-green-300 text-sm font-medium px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 whitespace-nowrap">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-green-400" />
+          Voice call + SMS sent to emergency contact
         </div>
       )}
 
