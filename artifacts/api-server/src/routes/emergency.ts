@@ -305,7 +305,7 @@ function safe(text: string | undefined | null, maxLen = 200): string {
   return text.replace(/[<>&"']/g, " ").replace(/\s+/g, " ").trim().substring(0, maxLen);
 }
 
-function buildJivAIScript(params: {
+function buildFallbackScript(params: {
   transcript?: string;
   category?: string;
   subcategory?: string;
@@ -316,10 +316,7 @@ function buildJivAIScript(params: {
   patientRelation?: string | null;
   recommendedAction?: string;
 }): string {
-  const {
-    transcript, category, subcategory, severity, urgency,
-    patientAge, patientGender, patientRelation, recommendedAction,
-  } = params;
+  const { transcript, category, subcategory, severity, urgency, patientAge, patientGender, patientRelation, recommendedAction } = params;
 
   const cat = safe(category || "Emergency");
   const sub = safe(subcategory || "");
@@ -337,40 +334,102 @@ function buildJivAIScript(params: {
     ? recommendedAction.split(".").map(s => s.trim()).filter(s => s.length > 5).slice(0, 3)
     : [];
 
-  const lines: string[] = [];
-
-  lines.push(`Hello. This is JivAI, an AI emergency response system.`);
-  lines.push(`I am calling because an emergency has been detected and your number is listed as an emergency contact.`);
-  lines.push(`<break time="1s"/>`);
-
-  lines.push(`Emergency type: ${cat}${sub && sub !== cat ? `, specifically ${sub}` : ""}.`);
-  lines.push(`Severity level: ${sev}.`);
-  lines.push(`Patient: ${patientDesc}.`);
+  const lines: string[] = [
+    `Hello. This is JivAI, an AI emergency response system.`,
+    `I am calling because an emergency has been detected and your number is listed as an emergency contact.`,
+    `<break time="1s"/>`,
+    `Emergency type: ${cat}${sub && sub !== cat ? `, specifically ${sub}` : ""}.`,
+    `Severity level: ${sev}.`,
+    `Patient: ${patientDesc}.`,
+  ];
 
   if (tx) {
-    lines.push(`<break time="0.5s"/>`);
-    lines.push(`Here is what was reported: ${tx}.`);
+    lines.push(`<break time="0.5s"/>`, `Here is what was reported: ${tx}.`);
   }
-
   if (actionLines.length) {
-    lines.push(`<break time="0.5s"/>`);
-    lines.push(`Recommended immediate actions are: ${actionLines.join(". ")}.`);
+    lines.push(`<break time="0.5s"/>`, `Recommended immediate actions: ${actionLines.join(". ")}.`);
   }
 
-  lines.push(`<break time="1s"/>`);
-  lines.push(`Please respond to this emergency immediately. Call back or go to the person right away.`);
-  lines.push(`This message will now repeat.`);
-  lines.push(`<break time="2s"/>`);
-
-  const repeatLines = [
+  lines.push(
+    `<break time="1s"/>`,
+    `Please respond to this emergency immediately. Call back or go to the person right away.`,
+    `This message will now repeat.`,
+    `<break time="2s"/>`,
     `Emergency type: ${cat}${sub && sub !== cat ? `, ${sub}` : ""}. Severity: ${sev}. Patient: ${patientDesc}.`,
     tx ? `Reported: ${tx}.` : "",
     `Please respond immediately. This was an automated alert from JivAI.`,
-  ].filter(Boolean);
+  );
 
-  lines.push(...repeatLines);
+  return lines.filter(Boolean).join(" ");
+}
 
-  return `<Response><Say voice="alice" language="en-IN">${lines.join(" ")}</Say></Response>`;
+async function buildJivAIScript(params: {
+  transcript?: string;
+  category?: string;
+  subcategory?: string;
+  severity?: string;
+  urgency?: string;
+  patientAge?: string | number | null;
+  patientGender?: string;
+  patientRelation?: string | null;
+  recommendedAction?: string;
+}): Promise<string> {
+  const { transcript, category, subcategory, severity, urgency, patientAge, patientGender, patientRelation, recommendedAction } = params;
+
+  let spokenMessage: string;
+
+  try {
+    const ai = getAiClient();
+
+    let patientDesc = "the patient";
+    const parts: string[] = [];
+    if (patientRelation && patientRelation !== "null") parts.push(`their ${patientRelation}`);
+    else if (patientGender && patientGender !== "Unknown") parts.push(patientGender === "Male" ? "a male" : "a female");
+    if (patientAge) parts.push(`${patientAge} years old`);
+    if (parts.length) patientDesc = parts.join(", ");
+
+    const prompt = `You are JivAI, an AI emergency response system. You are about to deliver a voice call to an emergency contact about a real emergency situation.
+
+Write a clear, natural, spoken emergency briefing — as if you are a calm but urgent emergency dispatcher talking to a friend or family member on the phone. Do NOT use bullet points, markdown, headers, or lists. Write in plain spoken sentences only.
+
+Emergency details:
+- What happened (user's own words): "${safe(transcript, 300)}"
+- Emergency type: ${safe(category || "Emergency")}${subcategory ? ` — ${safe(subcategory)}` : ""}
+- Severity: ${safe(severity || urgency || "High")}
+- About: ${patientDesc}
+- Recommended action: ${safe(recommendedAction, 200) || "seek immediate medical help"}
+
+Your briefing must:
+1. Start with: "Hello, this is JivAI, an emergency alert system."
+2. Explain the situation naturally in 3 to 5 sentences — what happened, who it involves, and how serious it is
+3. Tell them what they should do right now
+4. End with: "Please respond immediately. This message will repeat." then repeat the key facts once more briefly.
+
+Keep total length under 60 seconds when spoken aloud. Use simple, clear English. No special characters except commas and periods.`;
+
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { maxOutputTokens: 400 },
+    });
+
+    const raw = result.text ?? "";
+    spokenMessage = raw
+      .replace(/[*_#`~]/g, "")
+      .replace(/[<>]/g, " ")
+      .replace(/&/g, "and")
+      .replace(/"/g, "'")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!spokenMessage || spokenMessage.length < 40) {
+      throw new Error("AI response too short");
+    }
+  } catch {
+    spokenMessage = buildFallbackScript(params);
+  }
+
+  return `<Response><Say voice="alice" language="en-IN">${spokenMessage}</Say></Response>`;
 }
 
 router.post("/emergency/call", async (req, res) => {
@@ -400,7 +459,7 @@ router.post("/emergency/call", async (req, res) => {
     return;
   }
 
-  const twiml = buildJivAIScript({
+  const twiml = await buildJivAIScript({
     transcript, category, subcategory, severity, urgency,
     patientAge, patientGender, patientRelation, recommendedAction,
   });
