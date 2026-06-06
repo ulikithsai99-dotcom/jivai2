@@ -152,7 +152,12 @@ export default function Response() {
       if (secs <= 0) {
         clearInterval(secondaryRef.current!);
         setSecondaryCountdown(null);
-        window.location.href = `tel:${SECONDARY_CONTACT}`;
+        setSecondaryDismissed(true);
+        const a = document.createElement("a");
+        a.href = `tel:${SECONDARY_CONTACT}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       } else {
         setSecondaryCountdown(secs);
       }
@@ -411,36 +416,40 @@ export default function Response() {
         </div>
       )}
 
-      {/* Secondary contact prompt */}
+      {/* Secondary contact auto-call */}
       {secondaryCountdown !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="w-full max-w-sm mx-4 bg-card border-2 border-orange-500/60 rounded-2xl overflow-hidden shadow-2xl">
             <div className="bg-orange-500/10 px-5 py-4 border-b border-orange-500/30">
               <div className="flex items-center gap-2">
                 <Phone className="w-5 h-5 text-orange-400 animate-pulse" />
-                <span className="font-bold text-foreground">Also notify emergency contact?</span>
+                <span className="font-bold text-foreground">Calling Emergency Contact</span>
               </div>
             </div>
             <div className="px-5 py-6 text-center">
               <p className="text-muted-foreground text-sm mb-2">Auto-calling in</p>
               <p className="text-5xl font-black text-orange-400 mb-1">{secondaryCountdown}</p>
-              <p className="text-muted-foreground text-xs mb-1">seconds</p>
-              <p className="text-sm font-semibold text-foreground mb-6">{SECONDARY_CONTACT_DISPLAY}</p>
+              <p className="text-muted-foreground text-xs mb-1">second{secondaryCountdown !== 1 ? "s" : ""}…</p>
+              <p className="text-base font-bold text-foreground mb-6">{SECONDARY_CONTACT_DISPLAY}</p>
               <div className="flex gap-3">
                 <a
                   href={`tel:${SECONDARY_CONTACT}`}
                   className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-xl font-bold text-sm hover:opacity-90"
-                  onClick={() => { if (secondaryRef.current) clearInterval(secondaryRef.current); setSecondaryCountdown(null); setSecondaryDismissed(true); }}
+                  onClick={() => {
+                    if (secondaryRef.current) clearInterval(secondaryRef.current);
+                    setSecondaryCountdown(null);
+                    setSecondaryDismissed(true);
+                  }}
                 >
                   <Phone className="w-4 h-4" />
-                  Yes, Call
+                  Call Now
                 </a>
                 <button
                   onClick={dismissSecondary}
                   className="flex-1 flex items-center justify-center gap-2 bg-muted text-muted-foreground py-3 rounded-xl text-sm hover:bg-muted/80"
                 >
                   <X className="w-4 h-4" />
-                  No
+                  Cancel
                 </button>
               </div>
             </div>
