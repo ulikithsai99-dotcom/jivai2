@@ -169,7 +169,7 @@ export default function Response() {
           patientGender:     cl?.patient?.gender  ?? "Unknown",
           patientRelation:   cl?.patient?.relation ?? null,
           recommendedAction: cl?.recommended_action ?? "",
-          to: SECONDARY_CONTACT,
+          to: SECONDARY_CONTACT || undefined,
         }),
       });
     } catch { /* silent — Twilio call placed server-side */ }
