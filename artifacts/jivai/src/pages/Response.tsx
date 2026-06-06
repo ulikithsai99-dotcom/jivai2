@@ -11,12 +11,11 @@ import {
   X,
   MapPin,
   Navigation,
-  Building2,
-  ExternalLink,
   Volume2,
   VolumeX,
 } from "lucide-react";
 import { useClassifyEmergency } from "@workspace/api-client-react";
+import EmergencyMap from "../components/EmergencyMap";
 
 type GpsLocation = { lat: number; lng: number; accuracy: number };
 
@@ -548,7 +547,7 @@ export default function Response() {
           </div>
         )}
 
-        {/* Location banner */}
+        {/* Location + map section */}
         {gpsState === "requesting" && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 border border-border rounded-xl px-4 py-2.5">
             <Navigation className="w-3.5 h-3.5 animate-pulse text-primary" />
@@ -556,24 +555,40 @@ export default function Response() {
           </div>
         )}
         {gpsState === "granted" && gps && (
-          <a
-            href={`https://maps.google.com/?q=${gps.lat},${gps.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3 hover:bg-blue-500/15 transition-colors group"
-          >
-            <div className="flex items-start gap-3">
-              <MapPin className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs font-semibold text-blue-300 mb-0.5">Your location detected — relay this to responders</p>
-                <p className="text-xs font-mono text-blue-400/80">
-                  {gps.lat.toFixed(5)}, {gps.lng.toFixed(5)}
-                  {gps.accuracy < 100 && <span className="text-blue-500/60 ml-1">(±{Math.round(gps.accuracy)}m)</span>}
-                </p>
+          <div className="rounded-xl overflow-hidden border border-blue-500/30 bg-blue-500/5">
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <p className="text-xs font-semibold text-blue-300">Your location — relay to responders</p>
               </div>
+              <a
+                href={`https://www.google.com/maps/search/nearby+emergency+services/@${gps.lat},${gps.lng},15z`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-400 hover:text-blue-300 font-medium shrink-0 ml-2 transition-colors"
+              >
+                Open Google Maps →
+              </a>
             </div>
-            <span className="text-xs text-blue-400 group-hover:text-blue-300 font-medium shrink-0 ml-2">Open Maps →</span>
-          </a>
+            <div className="px-3 pb-3">
+              <EmergencyMap lat={gps.lat} lng={gps.lng} accuracy={gps.accuracy} nearbyPlaces={nearbyPlaces ?? []} />
+            </div>
+            <div className="px-4 pb-2.5 flex items-center justify-between">
+              <p className="text-xs font-mono text-blue-400/70">
+                {gps.lat.toFixed(5)}, {gps.lng.toFixed(5)}
+                {gps.accuracy < 100 && <span className="text-blue-500/50 ml-1">(±{Math.round(gps.accuracy)}m)</span>}
+              </p>
+              {nearbyLoading && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Finding nearby…
+                </div>
+              )}
+              {nearbyPlaces && nearbyPlaces.length > 0 && (
+                <p className="text-xs text-blue-400/60">{nearbyPlaces.length} facilities found — tap markers</p>
+              )}
+            </div>
+          </div>
         )}
         {gpsState === "denied" && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/20 border border-border rounded-xl px-4 py-2.5">
@@ -668,65 +683,6 @@ export default function Response() {
           </div>
         )}
 
-        {/* Nearby emergency locations */}
-        {(nearbyLoading || (nearbyPlaces && nearbyPlaces.length > 0)) && (
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5" />
-              Nearby Emergency Facilities
-            </p>
-            {nearbyLoading && !nearbyPlaces && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Finding nearest locations…</span>
-              </div>
-            )}
-            <div className="grid gap-2">
-              {nearbyPlaces?.map((place, i) => {
-                const icon = place.amenity === "fire_station" ? "🚒"
-                           : place.amenity === "police"       ? "🚔"
-                           : "🏥";
-                const distLabel = place.distKm < 1
-                  ? `${Math.round(place.distKm * 1000)} m away`
-                  : `${place.distKm} km away`;
-                return (
-                  <div key={i} className="bg-card border border-border rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <span className="text-base mt-0.5 shrink-0">{icon}</span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{place.name}</p>
-                        {place.address && (
-                          <p className="text-xs text-muted-foreground truncate">{place.address}</p>
-                        )}
-                        <p className="text-xs text-primary font-medium mt-0.5">{distLabel}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5 shrink-0">
-                      {place.phone && (
-                        <a
-                          href={`tel:${place.phone.replace(/[^0-9+]/g, "")}`}
-                          className="flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 rounded-lg px-2 py-1 hover:bg-primary/20 transition-colors"
-                        >
-                          <Phone className="w-3 h-3" />
-                          Call
-                        </a>
-                      )}
-                      <a
-                        href={`https://maps.google.com/?q=${place.lat},${place.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs bg-muted/50 text-muted-foreground border border-border rounded-lg px-2 py-1 hover:bg-muted transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Maps
-                      </a>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Follow-up history */}
         {history.length > 2 && (
