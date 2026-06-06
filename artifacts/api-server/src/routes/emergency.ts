@@ -248,7 +248,7 @@ router.post("/emergency/guidance", async (req, res) => {
     ];
 
     const stream = await ai.models.generateContentStream({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents,
       config: {
         systemInstruction: CLASSIFICATION_SYSTEM_PROMPT,
@@ -408,7 +408,7 @@ Your briefing must:
 Keep total length under 60 seconds when spoken aloud. Use simple, clear English. No special characters except commas and periods.`;
 
     const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: { maxOutputTokens: 400 },
     });
