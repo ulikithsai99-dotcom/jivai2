@@ -300,4 +300,48 @@ router.post("/emergency/tts", async (req, res) => {
   res.json({ audio: "", format: "none", text });
 });
 
+router.post("/emergency/call", async (req, res) => {
+  const { transcript, category, to } = req.body as {
+    transcript?: string;
+    category?: string;
+    to?: string;
+  };
+
+  const accountSid  = process.env.TWILIO_ACCOUNT_SID;
+  const authToken   = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber  = process.env.TWILIO_FROM_NUMBER;
+  const toNumber    = to || process.env.TWILIO_EMERGENCY_CONTACT;
+
+  if (!accountSid || !authToken || !fromNumber || !toNumber) {
+    res.status(503).json({ error: "Twilio not configured" });
+    return;
+  }
+
+  const safeTranscript = transcript
+    ? transcript.replace(/[<>&"]/g, " ").substring(0, 150)
+    : "";
+
+  const categoryLabel = category && category !== "Unknown" ? category : "an emergency";
+
+  const message = safeTranscript
+    ? `This is an automated emergency alert from JivAI. Someone reported ${categoryLabel}. They said: ${safeTranscript}. Please call them back immediately.`
+    : `This is an automated emergency alert from JivAI. Someone near you has reported ${categoryLabel}. Please call them back immediately.`;
+
+  const twiml = `<Response><Say voice="alice" language="en-IN">${message}</Say><Pause length="1"/><Say voice="alice" language="en-IN">This message will repeat once.</Say><Say voice="alice" language="en-IN">${message}</Say></Response>`;
+
+  try {
+    const twilio = await import("twilio");
+    const client = twilio.default(accountSid, authToken);
+    const call = await client.calls.create({
+      twiml,
+      to: toNumber,
+      from: fromNumber,
+    });
+    res.json({ success: true, callSid: call.sid, to: toNumber });
+  } catch (err) {
+    req.log.error({ err }, "Twilio call error");
+    res.status(500).json({ error: "Failed to place call", detail: String(err) });
+  }
+});
+
 export default router;

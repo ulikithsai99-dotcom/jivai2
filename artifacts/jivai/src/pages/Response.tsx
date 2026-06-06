@@ -143,7 +143,18 @@ export default function Response() {
     return base.endsWith("/") ? base : base + "/";
   };
 
-  const triggerSecondaryPrompt = useCallback(() => {
+  const fireBackendCall = useCallback(async (transcript: string, category: string) => {
+    try {
+      const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      await fetch(`${base}/api/emergency/call`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript, category, to: SECONDARY_CONTACT }),
+      });
+    } catch { /* silent — Twilio call placed server-side */ }
+  }, []);
+
+  const triggerSecondaryPrompt = useCallback((txScript: string, cat: string) => {
     if (secondaryDismissed) return;
     let secs = COUNTDOWN_SECONDS;
     setSecondaryCountdown(secs);
@@ -153,16 +164,12 @@ export default function Response() {
         clearInterval(secondaryRef.current!);
         setSecondaryCountdown(null);
         setSecondaryDismissed(true);
-        const a = document.createElement("a");
-        a.href = `tel:${SECONDARY_CONTACT}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        fireBackendCall(txScript, cat);
       } else {
         setSecondaryCountdown(secs);
       }
     }, 1000);
-  }, [secondaryDismissed]);
+  }, [secondaryDismissed, fireBackendCall]);
 
   const dismissSecondary = () => {
     if (secondaryRef.current) clearInterval(secondaryRef.current);
@@ -232,10 +239,10 @@ export default function Response() {
     finally { setNearbyLoading(false); }
   }, []);
 
-  const initiateCall = useCallback((number: string, andThenSecondary = false) => {
+  const initiateCall = useCallback((number: string, andThenSecondary = false, txScript = "", cat = "") => {
     window.location.href = `tel:${number}`;
     if (andThenSecondary) {
-      setTimeout(() => triggerSecondaryPrompt(), 1500);
+      setTimeout(() => triggerSecondaryPrompt(txScript, cat), 1500);
     }
   }, [triggerSecondaryPrompt]);
 
@@ -253,7 +260,7 @@ export default function Response() {
       if (secs <= 0) {
         clearInterval(countdownRef.current!);
         setCountdown(null);
-        initiateCall(number, true);
+        initiateCall(number, true, transcript, classification.category ?? "");
       } else {
         setCountdown(secs);
       }
@@ -397,7 +404,7 @@ export default function Response() {
                   onClick={() => {
                     if (countdownRef.current) clearInterval(countdownRef.current);
                     setCountdown(null);
-                    setTimeout(() => triggerSecondaryPrompt(), 1500);
+                    setTimeout(() => triggerSecondaryPrompt(transcript, classification?.category ?? ""), 1500);
                   }}
                 >
                   <Phone className="w-4 h-4" />
@@ -427,23 +434,24 @@ export default function Response() {
               </div>
             </div>
             <div className="px-5 py-6 text-center">
-              <p className="text-muted-foreground text-sm mb-2">Auto-calling in</p>
+              <p className="text-muted-foreground text-sm mb-2">Dialing via network in</p>
               <p className="text-5xl font-black text-orange-400 mb-1">{secondaryCountdown}</p>
               <p className="text-muted-foreground text-xs mb-1">second{secondaryCountdown !== 1 ? "s" : ""}…</p>
-              <p className="text-base font-bold text-foreground mb-6">{SECONDARY_CONTACT_DISPLAY}</p>
+              <p className="text-base font-bold text-foreground mb-1">{SECONDARY_CONTACT_DISPLAY}</p>
+              <p className="text-xs text-muted-foreground mb-6">They will receive a voice call with emergency details</p>
               <div className="flex gap-3">
-                <a
-                  href={`tel:${SECONDARY_CONTACT}`}
-                  className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-xl font-bold text-sm hover:opacity-90"
+                <button
                   onClick={() => {
                     if (secondaryRef.current) clearInterval(secondaryRef.current);
                     setSecondaryCountdown(null);
                     setSecondaryDismissed(true);
+                    fireBackendCall(transcript, classification?.category ?? "");
                   }}
+                  className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-xl font-bold text-sm hover:opacity-90"
                 >
                   <Phone className="w-4 h-4" />
                   Call Now
-                </a>
+                </button>
                 <button
                   onClick={dismissSecondary}
                   className="flex-1 flex items-center justify-center gap-2 bg-muted text-muted-foreground py-3 rounded-xl text-sm hover:bg-muted/80"
