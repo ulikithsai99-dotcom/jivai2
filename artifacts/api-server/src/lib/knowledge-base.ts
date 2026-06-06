@@ -29,6 +29,9 @@ export const EMERGENCY_KNOWLEDGE_BASE: EmergencyKnowledge[] = [
       "not breathing", "not waking", "bleeding", "blood", "wound", "cut",
       "burn", "broken bone", "fracture", "seizure", "convulsion", "stroke",
       "poison", "overdose", "allergy", "anaphylaxis", "choking", "fainted",
+      "fever", "high fever", "vomiting", "sick", "unwell", "not feeling well",
+      "diarrhea", "diabetic", "sugar level", "blood pressure", "bp high", "bp low",
+      "bukhar", "tez bukhar", "ulti", "dast", "tabiyat kharab", "beemar",
       "gir gaye", "gir gayi", "gir gaya", "gire", "beh gaye", "beh gayi",
       "khoon", "khoon nikal", "nahi utha", "nahi uthi", "saans nahi",
       "hosh nahi", "behosh", "behosh ho gaye", "behosh ho gayi",
@@ -429,7 +432,7 @@ export function findRelevantKnowledge(input: string): EmergencyKnowledge[] {
     }
 
     for (const pattern of knowledge.semanticPatterns) {
-      const patternWords = pattern.toLowerCase().split(" ");
+      const patternWords = pattern.toLowerCase().split(" ").filter((w) => w.length >= 5);
       const matchCount = patternWords.filter((w) => lowerInput.includes(w)).length;
       score += matchCount * 0.5;
     }
